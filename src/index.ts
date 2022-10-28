@@ -47,7 +47,7 @@ passport.use(new GoogleStrategy({
 ));
 
 app.get('/auth/google',
-    passport.authenticate('google', {scope : ['profile']}
+    passport.authenticate('google', {scope : ['profile', 'https://www.googleapis.com/auth/userinfo.email']}
 ));
 
 app.get('/auth/google/callback',
@@ -57,6 +57,10 @@ app.get('/auth/google/callback',
         res.redirect('http://localhost:3000');
     }
 );
+
+app.get("/getuser", (req, res) => {
+    res.send(req.user);
+});
 
 app.get("/", (req, res) => {
     res.send("Hello world!");
