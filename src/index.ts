@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
+import User from './User';
 
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
@@ -25,24 +26,37 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.serializeUser((user : any, done : any) => {
-    return done(null, user);
+passport.serializeUser((googleId : any, done : any) => {
+    return done(null, googleId);
 });
 
-passport.deserializeUser((user : any, done : any) => {
-    return done(null, user);
+passport.deserializeUser((googleId : any, done : any) => {
+    User.findOne({googleId : googleId}, (err : Error, user : any) => {
+        if(err) return done(null, null);
+        return done(null, user);
+    })
 })
 
 passport.use(new GoogleStrategy({
-    clientID: "375844977945-8bk8b2svnct67cpogemkpv42ktbbo2r3.apps.googleusercontent.com",
-    clientSecret: "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",
+    clientID: `${process.env.GOOGLE_CLIENT_ID}`,
+    clientSecret: `${process.env.GOOGLE_CLIENT_SECRET}`,
     callbackURL: "/auth/google/callback"
 },
     function(accessToken: any, refreshToken: any, profile: any, callback: any) {
-        //Called on successful auth 
-        //insert into database
-        console.log(profile);
-        callback(null, profile)
+        User.findOne({googleId: profile.id}, async (err: Error, user: any) => {
+            if(err) return callback(err, null);
+            if(!user) { //then create
+                const newUser = new User({
+                    googleId: profile.id,
+                    name: profile.displayName,
+                    email: profile.emails[0].value,
+                    photo: profile.photos[0].value
+                });
+                await newUser.save();
+                callback(null, newUser.googleId);
+            }   
+            callback(null, user.googleId);       
+        })
     }
 ));
 
@@ -58,9 +72,21 @@ app.get('/auth/google/callback',
     }
 );
 
+app.get("/auth/logout", (req, res) => {
+    if(req.user) {
+        req.logOut(() => { 
+            req.session.destroy(() => {
+                res.clearCookie('connect.sid');
+                res.send("success");
+            });
+        });      
+    }
+})
+
 app.get("/getuser", (req, res) => {
     res.send(req.user);
 });
+
 
 app.get("/", (req, res) => {
     res.send("Hello world!");
