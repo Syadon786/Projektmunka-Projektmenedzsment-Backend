@@ -11,7 +11,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 dotenv.config();
 
 const app = express();
-mongoose.connect(`${process.env.DATABASE_URL}${process.env.DATABASE_NAME}`, {}, () => {
+mongoose.connect(`${process.env.DATABASE_URL}`, {}, () => {
     console.log("Connected to mongoose successfully!");
 });
 
