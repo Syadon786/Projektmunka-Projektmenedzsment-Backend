@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import {Schema, model} from 'mongoose';
 
-const user = new mongoose.Schema({
-    googleId: {
+const user = new Schema({
+    _id: {
         required: true,
         type: String
     },
@@ -19,4 +19,4 @@ const user = new mongoose.Schema({
     }
 });
 
-export default mongoose.model("User", user);
+export default model("User", user);
