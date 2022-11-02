@@ -20,7 +20,7 @@ mongoose.connect(`${process.env.DATABASE_URL}`, {}, () => {
 
 //Middleware
 app.use(express.json());
-app.use(cors({origin: "http://localhost:3000", credentials: true}));
+app.use(cors({origin: `${process.env.FRONTEND}`, credentials: true}));
 
 app.set("trust proxy", 1);
 app.use(session({
@@ -78,7 +78,7 @@ app.get('/auth/google/callback',
     passport.authenticate('google', {failureRedirect : '/login'}),
     function(req, res) {
         //Successful auth, redirect HomePage
-        res.redirect('http://localhost:3000');
+        res.redirect(process.env.FRONTEND);
     }
 );
 
