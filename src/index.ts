@@ -112,12 +112,12 @@ app.post("/project", (req, res) => {
             return console.log(err);
         }
         console.log("A new project was successfully created.");
+        res.send("Success");
     });
-    res.send("Success");
 });
 
-app.get("/project/:userId", (req, res) => {
-    Project.find({$or: [{owner : req.params.userId}, {users : req.params.userId}]}, (err : Error, result : any) => {
+app.get("/:userId/project/", (req, res) => {
+    Project.find({$or: [{owner : req.params.userId}, {users : req.params.userId}]},  { name: 1 }, (err : Error, result : any) => {
         if(err) {
             res.send(err);
             return console.log(err);
@@ -125,6 +125,26 @@ app.get("/project/:userId", (req, res) => {
         res.send(result);
     })
 })
+
+app.get("/project/:projectId", (req, res) => {
+    Project.findOne({_id: req.params.projectId}, (err : Error, result: any) => {
+        if(err) {
+            res.send('Failure');
+            return console.log(err);       
+           }     
+           res.send(result);
+    })
+});
+
+app.patch("/project/:projectId", (req, res) => {
+    Project.updateOne({_id: req.params.projectId}, {treeData : req.body.treeData}, (err : Error) => {
+       if(err) {
+        res.send('Failure');
+        return console.log(err);       
+       }     
+       res.send('Success');
+    })
+});
 
 
 app.get("/", (req, res) => {
