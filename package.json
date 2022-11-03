@@ -11,7 +11,8 @@
     "dev": "nodemon --exec ts-node src/index.ts"
   },
   "engines": {
-    "node": "14.x"
+    "node": "14.x",
+    "npm": "6.x"
   },
   "keywords": [],
   "author": "",
