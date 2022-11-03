@@ -151,6 +151,6 @@ app.get("/", (req, res) => {
     res.send("Hello world!");
 })
 
-app.listen(3001, () => {
+app.listen(process.env.PORT || 3001, () => {
     console.log("Server started");
 })
