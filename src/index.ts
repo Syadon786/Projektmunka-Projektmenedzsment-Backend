@@ -28,8 +28,8 @@ app.use(session({
     resave: true,
     saveUninitialized: true,
     cookie: {
-        sameSite: "none",
-        secure: true,
+        // sameSite: "none",
+        // secure: true,
         maxAge: 1000 * 60 * 60 * 24 * 7 //One week
     }
 }));
@@ -97,23 +97,39 @@ app.get("/getuser", (req, res) => {
     res.send(req.user);
 });
 
-app.post("/project", (req, res) => {
-    console.log(req.body);
-    const newProject = new Project({
-        _id: uuidv4(),
-        name: req.body.name,
-        owner: req.body.owner,
-        treeData: req.body.treeData,
-        users: req.body.users
-    });
-    newProject.save((err) => {
+app.post("/users", (req, res) => {
+    User.find({ _id: { $ne: req.body.owner }}, { email: 1 , _id: 0}, (err : Error, result : any) => {
         if(err) {
             res.send("Failure");
             return console.log(err);
         }
-        console.log("A new project was successfully created.");
-        res.send("Success");
-    });
+        res.send(result);
+    })     
+})
+
+app.post("/project", (req, res) => {
+    console.log(req.body);
+    User.find({email : req.body.users}, {_id: 1}, (err, validUsers) => {
+        if(err) {
+            res.send("Failure");
+            return console.log(err);
+        }
+        const newProject = new Project({
+            _id: uuidv4(),
+            name: req.body.name,
+            owner: req.body.owner,
+            treeData: req.body.treeData,
+            users: [req.body.owner, ...validUsers.map(act => act.id)]
+        });
+        newProject.save((err) => {
+            if(err) {
+                res.send("Failure");
+                return console.log(err);
+            }
+            console.log("A new project was successfully created.");
+            res.send("Success");
+        });
+    })
 });
 
 app.get("/:userId/project/", (req, res) => {
