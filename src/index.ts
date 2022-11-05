@@ -4,10 +4,11 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 import passport from 'passport';
 import cors from 'cors';
-import { v4 as uuidv4 } from 'uuid';
 
 import User from './User';
-import Project from './Project';
+
+import projectRouter from './ProjectRouter';
+import usersRouter from './UsersRouter';
 
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
@@ -97,74 +98,12 @@ app.get("/getuser", (req, res) => {
     res.send(req.user);
 });
 
-app.post("/users", (req, res) => {
-    User.find({ _id: { $ne: req.body.owner }}, { email: 1 , _id: 0}, (err : Error, result : any) => {
-        if(err) {
-            res.send("Failure");
-            return console.log(err);
-        }
-        res.send(result);
-    })     
-})
-
-app.post("/project", (req, res) => {
-    console.log(req.body);
-    User.find({email : req.body.users}, {_id: 1}, (err, validUsers) => {
-        if(err) {
-            res.send("Failure");
-            return console.log(err);
-        }
-        const newProject = new Project({
-            _id: uuidv4(),
-            name: req.body.name,
-            owner: req.body.owner,
-            treeData: req.body.treeData,
-            users: [req.body.owner, ...validUsers.map(act => act.id)]
-        });
-        newProject.save((err) => {
-            if(err) {
-                res.send("Failure");
-                return console.log(err);
-            }
-            console.log("A new project was successfully created.");
-            res.send("Success");
-        });
-    })
-});
-
-app.get("/:userId/project/", (req, res) => {
-    Project.find({$or: [{owner : req.params.userId}, {users : req.params.userId}]},  { name: 1 }, (err : Error, result : any) => {
-        if(err) {
-            res.send(err);
-            return console.log(err);
-        }
-        res.send(result);
-    })
-})
-
-app.get("/project/:projectId", (req, res) => {
-    Project.findOne({_id: req.params.projectId}, (err : Error, result: any) => {
-        if(err) {
-            res.send('Failure');
-            return console.log(err);       
-           }     
-           res.send(result);
-    })
-});
-
-app.patch("/project/:projectId", (req, res) => {
-    Project.updateOne({_id: req.params.projectId}, {treeData : req.body.treeData}, (err : Error) => {
-       if(err) {
-        res.send('Failure');
-        return console.log(err);       
-       }     
-       res.send('Success');
-    })
-});
-
+//! Routers
+app.use(projectRouter);
+app.use(usersRouter);
 
 app.get("/", (req, res) => {
-    res.send("Hello world!");
+    res.send("Server is alive!");
 })
 
 app.listen(process.env.PORT || 3001, () => {
