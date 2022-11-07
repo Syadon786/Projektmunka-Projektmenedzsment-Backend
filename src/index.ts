@@ -9,6 +9,8 @@ import User from './User';
 
 import projectRouter from './ProjectRouter';
 import usersRouter from './UsersRouter';
+import messageRouter from './MessageRouter';
+import conversationRouter from './ConversationRouter';
 
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
@@ -101,6 +103,8 @@ app.get("/getuser", (req, res) => {
 //! Routers
 app.use(projectRouter);
 app.use(usersRouter);
+app.use(conversationRouter);
+app.use(messageRouter);
 
 app.get("/", (req, res) => {
     res.send("Server is alive!");

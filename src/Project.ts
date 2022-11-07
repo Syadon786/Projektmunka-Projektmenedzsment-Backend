@@ -20,6 +20,11 @@ const project = new Schema({
     users: {
         required: true,
         type: Array<String>
+    },
+
+    conversations: {
+        required: true,
+        type: Array<String>
     }
 });
 
