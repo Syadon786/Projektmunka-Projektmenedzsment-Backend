@@ -2,6 +2,7 @@ import {Router} from 'express';
 import Conversation from './Conversation';
 import User from './User';
 import Project from './Project';
+import Task from './Task';
 import { v4 as uuidv4 } from 'uuid';
 
 const conversationRouter = Router();
@@ -11,7 +12,8 @@ const conversationRouter = Router();
 conversationRouter.get("/conversations/:projectId", async (req, res) => {
     try {
         const conversationIds = await Project.find({_id: req.params.projectId}, {_id : 0, conversations: 1});
-        const conversations = await Conversation.find({_id: { $in: conversationIds[0].conversations}});
+        const taskConversationIds = await Task.find({projectId: req.params.projectId}, {_id: 0, conversationId: 1});
+        const conversations = await Conversation.find({_id: { $in: [...conversationIds[0].conversations, ...taskConversationIds.map(task => task.conversationId)]}});
         res.send(conversations);
     }
     catch(e) {

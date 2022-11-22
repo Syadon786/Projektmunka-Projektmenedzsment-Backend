@@ -7,6 +7,9 @@ const conversation = new Schema({
     },
     members: {
         type: Array,
+    },
+    isTaskChat: {
+        type: Boolean
     }
 },
 {timestamps: true}
