@@ -31,6 +31,7 @@ tasksRouter.post("/task", async (req, res) => {
 
         const newConversation = new Conversation({
             _id: conversationId,
+            title: req.body.title,
             members: [...filteredUsers],
             isTaskChat: true
         })
@@ -46,9 +47,8 @@ tasksRouter.post("/task", async (req, res) => {
 
 tasksRouter.delete("/task/:taskId", async (req, res) => {
     try {
-        const conversationId = Task.findById(req.params.taskId, {conversationId: 1, _id: 0});
-        await Conversation.findByIdAndDelete(conversationId);
-        await Task.findByIdAndDelete(req.params.taskId);
+        const task = await Task.findByIdAndDelete(req.params.taskId);
+        await Conversation.deleteOne({_id: task.conversationId});
         res.send("Success");         
     }
     catch(e) {
@@ -68,16 +68,36 @@ tasksRouter.get("/:projectId/task/", async (req, res) => {
     }
 });
 
-tasksRouter.get("/task/name/:conversationId", async (req, res) => {
+
+tasksRouter.get("/task/:taskId/members/", async (req, res) => {
     try {
-        const taskName = await Task.findOne({conversationId: req.params.conversationId}, {title: 1, _id: 0});
-        console.log(taskName);
-        res.send(taskName);
+         const userIds = await Task.findById(req.params.taskId, {members: 1, _id: 0});
+         const users = await User.find({_id: userIds.members});
+         res.send(users);
     }
     catch(e) {
         console.log(e);
         res.send("Failure");
     }
-});
+})
+
+tasksRouter.patch("/task/:taskId", async (req, res) => {
+    try {
+        const validUsers = await User.find({email : req.body.members}, {_id: 1});   
+        const validProjectUsers = await Project.find({_id: req.body.projectId}, {users: 1, _id: 0});
+        const filteredUsers = validProjectUsers[0].users.filter(id => validUsers.map(user => user._id).includes(id));
+        
+        const task = await Task.findByIdAndUpdate({_id: req.params.taskId}, {title: req.body.title, endDate: req.body.endDate,
+        description: req.body.description, subtasks: req.body.subtasks, $addToSet: {members: {$each: filteredUsers}}
+        })
+
+        await Conversation.updateOne({_id: task.conversationId}, {title: req.body.title, $addToSet: {members: {$each: filteredUsers}}})
+        res.send("Success");
+    }
+    catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
 
 export default tasksRouter;
