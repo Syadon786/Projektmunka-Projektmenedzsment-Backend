@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import User from './User';
 import Project from './Project';
 import Conversation from './Conversation';
+import Task from './Task';
 
 
 const projectRouter = Router();
@@ -27,6 +28,7 @@ projectRouter.post("/project", async (req, res) => {
         console.log("A new project was successfully created.");
         const newConversation = new Conversation({
             _id: conversationId,
+            title: req.body.name,
             members: [req.body.owner, ...validUsers.map(act => act.id)]
         })
             
@@ -80,9 +82,11 @@ projectRouter.patch("/project/:projectId", async (req, res) => {
 //delete a project
 projectRouter.delete("/project/:projectId", async (req, res) => {
     try {
-        const conversations = await Project.find({_id: req.params.projectId}, {_id : 0, conversations: 1});
-        await Conversation.deleteMany({_id: { $in: conversations[0].conversations}});
-        await Project.deleteOne({_id: req.params.projectId})
+        const project = await Project.findByIdAndDelete(req.params.projectId);
+        const conversationIds = await Task.find({projectId: req.params.projectId}, {conversationId: 1, _id: 0});
+        console.log(conversationIds);
+        await Conversation.deleteMany({_id: [...conversationIds.map(conv => conv.conversationId), ...project.conversations]});
+        await Task.deleteMany({projectId: req.params.projectId});
         res.send('Success');          
     }
     catch(e) {
@@ -90,14 +94,5 @@ projectRouter.delete("/project/:projectId", async (req, res) => {
         res.send('Failure');
     }
 });
-
-
-// const findItemNested = (arr : Array<any>, taskId : String) : Array<any> => (
-//     arr.reduce((a, task) => {
-//       if (a) return a;
-//       if (task.taskId === taskId) return task;
-//       if (task["children"]) return findItemNested(task["children"], taskId)
-//     }, null)
-//   );
 
 export default projectRouter;
