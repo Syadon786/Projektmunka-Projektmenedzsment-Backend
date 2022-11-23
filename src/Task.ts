@@ -28,6 +28,9 @@ const task = new Schema({
     description: {
         type: String
     },
+    subtasks: {
+        type: Array<String>
+    },
     members: {
         type: Array<String>
     },
