@@ -3,6 +3,7 @@ import Task from './Task';
 import Conversation from './Conversation';
 import Project from './Project';
 import User from './User';
+import cloudinary from './Cloudinary';
 import { v4 as uuidv4 } from 'uuid';
 
 const tasksRouter = Router();
@@ -99,5 +100,36 @@ tasksRouter.patch("/task/:taskId", async (req, res) => {
         res.send("Failure");
     }
 })
+
+tasksRouter.post("/task/image/upload", async (req, res) => {
+    try {
+        const response = await cloudinary.uploader.upload(req.body.image, {
+            upload_preset: `${process.env.CLOUDINARY_UPLOAD_PRESET}`,
+        })
+        if(response) {
+            console.log(response);
+            await Task.updateOne({_id: req.body.taskId},  { $push: { images: response.url} })
+            res.send("Success");
+        }
+    }
+    catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
+tasksRouter.get("/task/:taskId/images", async (req, res) => {
+    try {
+        const images = await Task.findOne({_id: req.params.taskId}, {images: 1, _id: 0});
+        if(images) {
+            res.send(images);
+        }
+    }
+    catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
 
 export default tasksRouter;
