@@ -131,5 +131,20 @@ tasksRouter.get("/task/:taskId/images", async (req, res) => {
     }
 })
 
+tasksRouter.delete("/task/:taskId/image", async (req, res) => {
+    try {
+      
+        await Task.updateOne({_id: req.params.taskId}, 
+            {$pull: {images: req.body.url}})
+        const response = await cloudinary.uploader.destroy(req.body.assetName);
+        if(response.result === "ok") {
+            res.send("Success");
+        }
+    } catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
 
 export default tasksRouter;
