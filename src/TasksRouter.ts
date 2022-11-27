@@ -5,6 +5,8 @@ import Project from './Project';
 import User from './User';
 import cloudinary from './Cloudinary';
 import { v4 as uuidv4 } from 'uuid';
+import Permissions from './Permissions';
+import Message from './Message';
 
 const tasksRouter = Router();
 
@@ -38,6 +40,11 @@ tasksRouter.post("/task", async (req, res) => {
         })
         await newConversation.save();
 
+        const permObj = await Permissions.findOne({projectId: req.body.projectId}, {_id: 0, permissions: 1});
+        const newPermObj = permObj.permissions;
+        newPermObj[`${req.body._id}`] = {};
+        await Permissions.updateOne({projectId: req.body.projectId}, {permissions: newPermObj});
+
         res.send("Success");         
     }
     catch(e) {
@@ -50,6 +57,13 @@ tasksRouter.delete("/task/:taskId", async (req, res) => {
     try {
         const task = await Task.findByIdAndDelete(req.params.taskId);
         await Conversation.deleteOne({_id: task.conversationId});
+        await Message.deleteMany({conversationId: task.conversationId});
+        const permObj = await Permissions.findOne({projectId: task.projectId}, {_id: 0, permissions: 1});
+        const newPermObj = permObj.permissions;
+        delete newPermObj[`${task._id}`]
+        await Permissions.updateOne({projectId: task.projectId}, {permissions: newPermObj});
+        await cloudinary.api.delete_resources(task.images.map(url => url.substring(61).split('.')[0]))
+
         res.send("Success");         
     }
     catch(e) {

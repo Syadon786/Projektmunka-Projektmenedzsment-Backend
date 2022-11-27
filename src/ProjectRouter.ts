@@ -4,6 +4,9 @@ import User from './User';
 import Project from './Project';
 import Conversation from './Conversation';
 import Task from './Task';
+import Permissions from './Permissions';
+import cloudinary from './Cloudinary';
+import Message from './Message';
 
 
 const projectRouter = Router();
@@ -14,9 +17,9 @@ projectRouter.post("/project", async (req, res) => {
         console.log(req.body);
         const validUsers = await User.find({email : req.body.users}, {_id: 1});      
         const conversationId = uuidv4();
-
+        const projectId = uuidv4();
         const newProject = new Project({
-            _id: uuidv4(),
+            _id: projectId,
             name: req.body.name,
             owner: req.body.owner,
             treeData: req.body.treeData,
@@ -31,6 +34,13 @@ projectRouter.post("/project", async (req, res) => {
             title: req.body.name,
             members: [req.body.owner, ...validUsers.map(act => act.id)]
         })
+
+        const newPermission = new Permissions({
+            _id: uuidv4(),
+            projectId: projectId,
+        })
+
+        await newPermission.save();
             
         await newConversation.save()
         console.log("A new conversation was successfully created.");
@@ -86,7 +96,15 @@ projectRouter.delete("/project/:projectId", async (req, res) => {
         const conversationIds = await Task.find({projectId: req.params.projectId}, {conversationId: 1, _id: 0});
         console.log(conversationIds);
         await Conversation.deleteMany({_id: [...conversationIds.map(conv => conv.conversationId), ...project.conversations]});
+        await Message.deleteMany({conversationId: [...project.conversations, ...conversationIds.flatMap(obj => obj.conversationId)]})
+        await Permissions.deleteOne({projectId: project._id})
         await Task.deleteMany({projectId: req.params.projectId});
+
+        const tasksImages = await Task.find({projectId: req.params.projectId}, {_id: 0, images: 1});
+        const imageUrls = tasksImages.flatMap(obj => obj.images);
+        if(imageUrls.length > 0) {
+            await cloudinary.api.delete_resources(imageUrls.map(url => url.substring(61).split('.')[0]))
+        }
         res.send('Success');          
     }
     catch(e) {
