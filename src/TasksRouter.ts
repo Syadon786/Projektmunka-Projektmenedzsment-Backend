@@ -62,7 +62,9 @@ tasksRouter.delete("/task/:taskId", async (req, res) => {
         const newPermObj = permObj.permissions;
         delete newPermObj[`${task._id}`]
         await Permissions.updateOne({projectId: task.projectId}, {permissions: newPermObj});
-        await cloudinary.api.delete_resources(task.images.map(url => url.substring(61).split('.')[0]))
+        if(task.images.length > 0) {
+            await cloudinary.api.delete_resources(task.images.map(url => url.substring(61).split('.')[0]))
+        }
 
         res.send("Success");         
     }
@@ -103,8 +105,7 @@ tasksRouter.patch("/task/:taskId", async (req, res) => {
         const filteredUsers = validProjectUsers[0].users.filter(id => validUsers.map(user => user._id).includes(id));
         
         const task = await Task.findByIdAndUpdate({_id: req.params.taskId}, {title: req.body.title, endDate: req.body.endDate,
-        description: req.body.description, subtasks: req.body.subtasks, $addToSet: {members: {$each: filteredUsers}}
-        })
+        description: req.body.description, subtasks: req.body.subtasks, $addToSet: {members: {$each: filteredUsers}}})
 
         await Conversation.updateOne({_id: task.conversationId}, {title: req.body.title, $addToSet: {members: {$each: filteredUsers}}})
         res.send("Success");
@@ -155,6 +156,50 @@ tasksRouter.delete("/task/:taskId/image", async (req, res) => {
             res.send("Success");
         }
     } catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
+tasksRouter.patch("/task/:taskId/subtask/complete/:subTaskId", async (req, res) => {
+    try {
+        let hasTask = await Task.countDocuments({_id: req.params.taskId, "completedTasks.id": req.params.subTaskId});
+        if(hasTask > 0) {
+            await Task.updateOne({_id: req.params.taskId, "completedTasks.id" : req.params.subTaskId},
+            {"completedTasks.$.completed": req.body.ticked})
+        }
+        else {
+            await Task.updateOne({_id: req.params.taskId},
+            {$push : { completedTasks: {id: req.params.subTaskId, completed: req.body.ticked}}})
+        }
+       // console.log(req.body.ticked);
+        res.send('OK');
+    }
+    catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
+tasksRouter.delete("/task/:taskId/subtask/:subTaskId", async (req, res) => {
+    try {
+        await Task.updateOne({_id: req.params.taskId}, {
+            $pull : { completedTasks: { id: req.params.subTaskId}}
+        })
+        res.send("Ok");
+    }
+    catch(e) {
+        console.log(e);
+        res.send("Failure");
+    }
+})
+
+tasksRouter.get("/task/:taskId/subtask/complete", async (req, res) => {
+    try {
+        const completed = await Task.findOne({_id: req.params.taskId}, {completedTasks: 1, _id: 0})
+        res.send(completed);
+    }
+    catch(e) {
         console.log(e);
         res.send("Failure");
     }
