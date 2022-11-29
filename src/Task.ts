@@ -31,6 +31,9 @@ const task = new Schema({
     subtasks: {
         type: Array<String>
     },
+    completedTasks: {
+        type: Array<Boolean>
+    },
     members: {
         type: Array<String>
     },
